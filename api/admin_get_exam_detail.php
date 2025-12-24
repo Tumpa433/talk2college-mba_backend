@@ -34,12 +34,14 @@ try {
     // Get exam basic info
     $stmt = $conn->prepare("
         SELECT 
-            e.id,
-            e.name,
-            e.slug,
-            e.created_at
-        FROM exams e
-        WHERE e.id = ?
+            id,
+            name,
+            slug,
+            category,
+            level,
+            created_at
+        FROM exams
+        WHERE id = ?
     ");
     $stmt->bind_param("i", $examId);
     $stmt->execute();
@@ -102,15 +104,15 @@ try {
     $papersStmt->execute();
     $papers = $papersStmt->get_result()->fetch_all(MYSQLI_ASSOC);
     
-    // Get colleges that accept this exam
+    // Get colleges that accept this exam - FIXED SQL injection
     $collegesStmt = $conn->prepare("
-        SELECT * FROM colleges 
-        WHERE exam LIKE CONCAT('%', ?, '%') 
-        OR exam = ?
+        SELECT id, name, exam 
+        FROM colleges 
+        WHERE FIND_IN_SET(?, REPLACE(exam, ', ', ',')) > 0
         ORDER BY name ASC
     ");
     $examName = $exam["name"];
-    $collegesStmt->bind_param("ss", $examName, $examName);
+    $collegesStmt->bind_param("s", $examName);
     $collegesStmt->execute();
     $colleges = $collegesStmt->get_result()->fetch_all(MYSQLI_ASSOC);
     
